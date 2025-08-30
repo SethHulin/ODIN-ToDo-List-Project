@@ -1,0 +1,13 @@
+# deps & builds
+node_modules/
+dist/
+
+# IDE/editor
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# env
+.env
