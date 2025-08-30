@@ -1,6 +1,6 @@
 import "./styles/main.css";
 import {renderProjects , displayError , clearProjectEntry, clearElement}from "./ui/UI.js";
-import {addProject , makeProject , removeProject} from "./domain/todo-list-logic";
+import {addItem , makeProject , removeProject} from "./domain/todo-list-logic";
 
 const projectInput = document.querySelector("#project-input");
 const newProjectButton = document.querySelector("#project-adder-button");
@@ -11,9 +11,10 @@ let projectList = [wrapdown , website];
 
 newProjectButton.addEventListener ("click" , event => {
     event.preventDefault();
+    const input = event.target.dataset.type
     const newProject = projectInput.value;
     if (newProject) {
-        const newProjectList = addProject(projectList , newProject);
+        const newProjectList = addItem(projectList , newProject);
         if (newProjectList === projectList) {
             displayError("Project names should be unique");
             clearProjectEntry(projectInput);

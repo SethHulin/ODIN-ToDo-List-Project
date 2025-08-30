@@ -1,4 +1,4 @@
-export function addProject(list , name) {
+export function addItem(list , name) {
     if (!name) return list;
 
     const project = makeProject (name);

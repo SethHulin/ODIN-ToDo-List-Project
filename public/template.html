@@ -9,22 +9,48 @@
 </head>
 <body>
 <div>
-    <h2 id="project-title">Projects</h2>
-    <ul id="project-list-container"></ul>
+    <div id="project-title-container"><h2 id="project-title">Projects</h2></div>
+    <div id="project-list-container">
+        <ul id="project-list"></ul>
+    </div>
 
-    <form action="">
-        <button id="project-adder-button">+</button>
-        <input
-                type="text"
-                id="project-input"
-                placeholder="Add a new project"
-                aria-label="Add a new poject"
-        />
-    </form>
+    <div id="project-input-container">
+        <form action="">
+            <button id="project-adder-button">+</button>
+            <input
+                    type="text"
+                    id="project-input"
+                    placeholder="Add a new project"
+                    aria-label="Add a new project"
+            />
+        </form>
+    </div>
 </div>
-    <h2 id="todo-list">To Dos</h2>
-<div>
 
+<div id="todo-list-container">
+
+    <div id="todo-list-header-container">
+        <h2 id="todo-list-header">To Dos</h2>
+    </div>
+    <div id="todo-list">
+        <ul>
+            <li class="task">Item 1</li>
+            <li class="task">Item 2</li>
+            <li class="task">Item 3</li>
+        </ul>
+    </div>
+        <div id="todo-list-input-container">
+            <form action="">
+                <button id="todo-list-adder-button">+</button>
+                <input
+                        type="text"
+                        id="todo-list-input"
+                        placeholder="Add a new task"
+                        aria-label="Add a new task"
+                />
+            </form>
+        </div>
+    
 </div>
 </body>
 </html>
