@@ -12,7 +12,7 @@ let projectList = [wrapdown , website];
 newProjectButton.addEventListener ("click" , event => {
     event.preventDefault();
     const newProject = projectInput.value;
-    if (newProjectList) {
+    if (newProject) {
         const newProjectList = addProject(projectList , newProject);
         if (newProjectList === projectList) {
             displayError("Project names should be unique");
@@ -29,9 +29,12 @@ newProjectButton.addEventListener ("click" , event => {
 
 projectListContainer.addEventListener("click" , event =>{
     const deleteButton = event.target.closest(".project-delete-button");
-    const id = deleteButton.dataset.projectId;
-    clearElement(projectListContainer);
-    projectList = removeProject(projectList , id);
-    renderProjects(projectListContainer , projectList);
+
+    if (deleteButton) {
+        const id = deleteButton.dataset.projectId;
+        clearElement(projectListContainer);
+        projectList = removeProject(projectList, id);
+        renderProjects(projectListContainer, projectList);
+    }
 })
 renderProjects(projectListContainer , projectList);
