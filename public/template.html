@@ -8,45 +8,45 @@
     <title>To-Do List</title>
 </head>
 <body>
-<div>
+<div id="title">TODO LIST</div>
+<div id="projects-container">
     <div id="project-title-container"><h2 id="project-title">Projects</h2></div>
-    <div id="project-list-container">
-        <ul id="project-list"></ul>
+    <div id="project-list-container" class="list-container">
+        <ul id="project-list" class="list" data-type="project"></ul>
     </div>
 
     <div id="project-input-container">
         <form action="">
-            <button id="project-adder-button">+</button>
+            <button id="project-adder-button" data-type="project" class="adder-button">+</button>
             <input
                     type="text"
                     id="project-input"
                     placeholder="Add a new project"
                     aria-label="Add a new project"
+                    data-type = "project"
             />
         </form>
     </div>
 </div>
 
-<div id="todo-list-container">
+<div id="todo-container">
 
     <div id="todo-list-header-container">
-        <h2 id="todo-list-header">To Dos</h2>
+        <h2 id="todo-list-header">Add a project to begin</h2>
     </div>
-    <div id="todo-list">
-        <ul>
-            <li class="task">Item 1</li>
-            <li class="task">Item 2</li>
-            <li class="task">Item 3</li>
+    <div id="todo-list-container" class="list-container">
+        <ul class="list" id="todo-list" data-type="todo">
         </ul>
     </div>
         <div id="todo-list-input-container">
             <form action="">
-                <button id="todo-list-adder-button">+</button>
+                <button id="todo-list-adder-button" data-type="todo" class="adder-button">+</button>
                 <input
                         type="text"
                         id="todo-list-input"
                         placeholder="Add a new task"
                         aria-label="Add a new task"
+                        data-type="todo"
                 />
             </form>
         </div>

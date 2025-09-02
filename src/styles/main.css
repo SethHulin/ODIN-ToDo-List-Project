@@ -5,8 +5,13 @@
 body {
     margin: 0;
     padding: 2rem;
-    display: flex;
+    display: grid;
     justify-content: space-between;
+    grid:
+            "... header header header" auto
+            "... projects todo-list ..." auto/
+            1fr minmax(100px,300px) minmax(100px,300px) 1fr;
+
 }
 
 .project-list-item {
@@ -15,3 +20,39 @@ body {
     align-items: baseline;
     grid-template-columns: 1fr 1fr ;
 }
+
+.adder-button {
+    cursor: pointer;
+}
+
+.item-entry {
+    cursor: pointer;
+}
+
+.delete-button {
+    cursor: pointer;
+}
+
+#title {
+    grid-area: header;
+    font-size: 5rem;
+    font-weight: 700;
+}
+
+#projects-container {
+    grid-area: projects;
+}
+
+#todo-container {
+    grid-area: todo-list;
+}
+
+.active-project {
+    font-weight: 900;
+    font-size: 1.5rem;
+}
+
+.notesInput {
+
+}
+
