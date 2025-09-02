@@ -11,20 +11,6 @@ export function renderProjects(container , list, type) {
         name.id = item.id;
         if (item.active === true) name.classList.add("active-project")
 
-        if (type === "todo") {
-            const notesInput = document.createElement("input");
-            notesInput.classList.add("notes-input");
-            notesInput.placeholder = "Task Notes";
-            notesInput.addEventListener("keydown" , (event) =>{
-                if (event.key === "Enter") {
-                    event.preventDefault();
-                    submitNotes(item.id , event.target ,  event.target.value);
-                }
-            })
-            name.appendChild(notesInput);
-        }
-
-
 
         const deleteButton = document.createElement("button");
         deleteButton.classList.add("delete-button");
@@ -60,7 +46,3 @@ export function clearElement (element) {
     }
 }
 
-function submitNotes (taskId , noteInput , noteText) {
-    noteInput.value = "";
-    console.log("Notes added");
-}
