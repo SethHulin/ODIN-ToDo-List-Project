@@ -14,23 +14,49 @@ body {
 
 }
 
-.project-list-item {
+.list-item {
     display: grid;
-    gap: 4rem;
     align-items: baseline;
-    grid-template-columns: 1fr 1fr ;
+    grid:
+            "priority task-name delete-button"
+            "... task-notes ..."
+            "... notes-input ..."
+            "submit-button ... ..."
+
 }
 
-.adder-button {
+.adder-button, .item-entry, .priority, .delete-button, .submit-notes-button  {
     cursor: pointer;
 }
 
-.item-entry {
-    cursor: pointer;
+
+
+.priority {
+    grid-area: priority;
 }
+
+.todo-item {
+    grid-area: task-name;
+}
+
+
+
+
 
 .delete-button {
-    cursor: pointer;
+    grid-area: delete-button;
+}
+
+.task-notes {
+    grid-area: task-notes;
+}
+
+.notes-input {
+    grid-area: notes-input;
+}
+
+.submit-button {
+    grid-area: submit-button;
 }
 
 #title {
@@ -56,3 +82,7 @@ body {
 
 }
 
+.task-notes {
+    font-size: .5rem;
+    color: #555555;
+}

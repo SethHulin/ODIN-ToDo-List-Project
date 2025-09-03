@@ -1,5 +1,5 @@
 import "./styles/main.css";
-import {renderProjects , displayError , clearProjectEntry, clearElement, renderTodoListHeader}from "./ui/UI.js";
+import {renderList , displayError , clearProjectEntry, clearElement, renderTodoListHeader}from "./ui/UI.js";
 import {addItem , removeItem, setActiveProject} from "./domain/todo-list-logic";
 
 const adderButtons = document.querySelectorAll(".adder-button");
@@ -30,13 +30,13 @@ adderButtons.forEach (button => button.addEventListener ("click" , event => {
         } else {
             currentListsByType[type] = newList;
             clearElement(currentListElement);
-            renderProjects(currentListElement , currentListsByType[type], type);
-            console.log(currentListsByType[type])
+            renderList(currentListElement , currentListsByType[type], type);
             clearProjectEntry(input);
         }
     } else {displayError("Project names cannot be blank");}
     if (type === "project") {
         renderTodoListHeader(newItem);
+        handleNewActiveProject(currentListsByType["project"].find(item => item.name === newItem))
     }
 
 
@@ -46,38 +46,71 @@ listElements.forEach(container => container.addEventListener("click" , event =>{
     const deleteButton = event.target.closest(".delete-button");
     const type = event.target.dataset.type;
     const itemEntry = event.target.closest(".item-entry");
-    const currentListElement = document.querySelector(`ul[data-type="${type}"]`)
+    const submitNotesButton = event.target.closest(".submit-notes-button");
+    const priorityOption = event.target.closest(".priority-option");
+    const currentListElement = document.querySelector(`ul[data-type="${type}"]`);
 
     if (deleteButton) {
         const id = deleteButton.id;
-        clearElement(currentListElement);
+        const removedProject = currentListsByType["project"].find(item => item.id === id)
+        if (type === "project") {
+            if (removedProject.active === true){
+            handleNewActiveProject(currentListsByType["project"][0])
+                }
+        }
         currentListsByType[type] = removeItem(currentListsByType[type], id);
-        renderProjects(currentListElement, currentListsByType[type] , type);
+        clearElement(currentListElement);
+        renderList(currentListElement, currentListsByType[type] , type);
     }
 
     if (itemEntry) {
-        if (type === "project") {
-            handleNewActiveProject(itemEntry);
-        } else if (type === "todo") {
-            expandTodo(itemEntry);
+        switch (type) {
+            case "project": handleNewActiveProject(event.target);
+            break;
+            case "todo": expandTodo(event.target);
         }
+    }
+
+    if (submitNotesButton) {
+        const taskId = event.target.dataset.id;
+        const notesInput = document.querySelector(`textarea[data-id="${taskId}"]`);
+        const notesText = notesInput.value;
+        currentListsByType["todo"] = submitNotes (taskId, currentListsByType["todo"] , notesText);
+        clearElement(todoListElement);
+        renderList(todoListElement , currentListsByType["todo"] , "todo");
+    }
+
+    if (priorityOption) {
+        currentListsByType["todo"] = changePriority(event.target.dataset.id , event.target.value);
+        console.log(currentListsByType["todo"]);
 
     }
+
+
 }))
 // renderProjects(projectListElement , projectList);
 
-function handleNewActiveProject (button) {
-    const newActiveId = button.id;
+function handleNewActiveProject (project) {
+    const newActiveId = project.id;
     const newActiveProject = currentListsByType["project"].find(item => item.id === newActiveId);
     currentListsByType = setActiveProject(newActiveId , currentListsByType["project"] , currentListsByType["todo"]);
     clearElement(projectListElement);
     clearElement(todoListElement);
     clearElement(todoListHeader);
     renderTodoListHeader(newActiveProject.name);
-    renderProjects(projectListElement , currentListsByType["project"], "project");
-    renderProjects(todoListElement , currentListsByType["todo"], "todo");
+    renderList(projectListElement , currentListsByType["project"], "project");
+    renderList(todoListElement , currentListsByType["todo"], "todo");
 }
 
 function expandTodo (button) {
 
+}
+
+function submitNotes (taskId , taskList , notesText) {
+    return taskList.map (task => (task.id === taskId) ? {...task,notes: notesText} : task);
+
+}
+
+function changePriority (taskId , newPriority) {
+    return currentListsByType["todo"].map (task => task.id === taskId ? {...task,priority: newPriority} : task);
 }
