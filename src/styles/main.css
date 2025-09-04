@@ -18,10 +18,10 @@ body {
     display: grid;
     align-items: baseline;
     grid:
-            "priority task-name delete-button"
-            "... task-notes ..."
-            "... notes-input ..."
-            "submit-button ... ..."
+            "priority task-name add-notes-button check-off-button delete-button"
+            "... task-notes ... ... ..."
+            "... notes-input ... ... ..."
+            "submit-button ... ... ... ..."
 
 }
 
@@ -29,17 +29,30 @@ body {
     cursor: pointer;
 }
 
-
+.completed-task {
+    opacity: .3;
+    text-decoration: line-through;
+}
 
 .priority {
     grid-area: priority;
+}
+
+.check-off-button {
+    grid-area: check-off-button;
 }
 
 .todo-item {
     grid-area: task-name;
 }
 
+.add-notes {
+    grid-area: add-notes-button;
+}
 
+.hidden {
+    display: none;
+}
 
 
 
@@ -85,4 +98,12 @@ body {
 .task-notes {
     font-size: .5rem;
     color: #555555;
+}
+
+.list-item:nth-child(even) {
+    background-color: white;
+}
+
+.list-item:nth-child(odd) {
+    background-color: #f9f9f9;
 }

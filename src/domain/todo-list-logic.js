@@ -30,6 +30,7 @@ function makeTodoItem (name) {
         id: Date.now().toString(),
         priority: 1,
         notes: "",
+        complete: false,
     }
 }
 
@@ -55,6 +56,23 @@ export function setActiveProject (newActiveId , projectList, todoList) {
 export function removeItem(list , buttonId) {
     if (!list) return;
     return list.filter(item => item.id !== buttonId);
+}
+
+export function submitNotes (taskId , taskList , notesText) {
+    return taskList.map (task => (task.id === taskId) ? {...task,notes: notesText} : task);
+
+}
+
+export function changePriority (taskId , newPriority , list) {
+    return list.map (task => task.id === taskId ? {...task,priority: newPriority} : task);
+}
+
+export function checkOffTask (taskId , completeFlag , list) {
+    return list.map (task => task.id == taskId ? {...task , complete: completeFlag} : task);
+}
+
+export function getCurrentItem(list , id) {
+    return list.find(item => item.id === id);
 }
 
 function normalize (string) {

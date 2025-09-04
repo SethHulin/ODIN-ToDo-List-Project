@@ -1,70 +1,25 @@
-export function renderList(container , list, type) {
-    const fullList = document.createDocumentFragment();
-    list.forEach(item => {
+// --- PUBLIC API ---
+export function renderList(container, list, type) {
+    const frag = document.createDocumentFragment();
+    for (const item of list) {
         const row = document.createElement("li");
         row.classList.add("list-item");
 
-        const name = document.createElement("h3");
-        name.innerText = item.name;
-        const itemClass = type === "project" ? "project-item" : "todo-item";
-        name.classList.add(itemClass);
-        name.classList.add("item-entry");
-        name.dataset.type = type;
-        name.id = item.id;
-        if (item.active === true) name.classList.add("active-project")
+        const listItem = buildTitle(item, type);
+        row.appendChild(listItem);
 
         if (type === "todo") {
-            const currentTask = list.find(task => task.id === item.id)
-
-            const notes = document.createElement("p");
-            notes.innerText = currentTask.notes;
-            notes.classList.add("task-notes");
-
-            const notesInput = document.createElement("textarea");
-            notesInput.dataset.id = item.id;
-            notesInput.classList.add("notes-input");
-            notesInput.placeholder = currentTask.notes === "" ? "Task Notes" : "Update Notes";
-
-            const submitNotes = document.createElement("button");
-            submitNotes.textContent = currentTask.notes === "" ? "Submit Notes" : "Update Notes";
-            submitNotes.classList.add("submit-notes-button");
-            submitNotes.dataset.id = item.id;
-
-            const priority = document.createElement("select");
-            priority.value = item.priority;
-            [1,2,3,4].forEach(value => {
-                const priorityOption = document.createElement("option")
-                priorityOption.innerText = value;
-                if (value == item.priority) priorityOption.selected = true;
-                priorityOption.classList.add("priority-option");
-                priorityOption.dataset.id = item.id;
-                priority.appendChild(priorityOption);
-            })
-            priority.classList.add("priority");
-            priority.dataset.id = item.id;
-
-
-
-            name.appendChild(notes);
-            name.appendChild(notesInput);
-            name.appendChild(submitNotes);
-            row.appendChild(priority);
+            row.appendChild(buildPrioritySelect(item));
+            listItem.appendChild(buildNotesPreview(item));
+            row.appendChild(buildAddNotesButton(item));
+            row.appendChild(buildCompleteToggle(item));
         }
 
+        row.appendChild(buildDeleteButton(item, type));
 
-
-        const deleteButton = document.createElement("button");
-        deleteButton.classList.add("delete-button");
-        deleteButton.dataset.id = item.id;
-        deleteButton.dataset.type = type;
-        deleteButton.innerText = "X";
-
-        row.appendChild(name);
-        row.appendChild(deleteButton);
-
-        fullList.appendChild(row);
-    });
-    container.appendChild(fullList);
+        frag.appendChild(row);
+    }
+    container.appendChild(frag);
 }
 
 export function renderTodoListHeader (projectName) {
@@ -87,10 +42,6 @@ export function clearElement (element) {
     }
 }
 
-function submitNotes (taskId , noteInput , noteText) {
-    noteInput.value = "";
-    console.log("Notes added");
-}
 
 export function getActiveEventTarget (event) {
     if (event.target.closest(".delete-button")) return "delete";
@@ -102,3 +53,101 @@ export function getActiveEventTarget (event) {
     }
     return;
 }
+
+export function addNotesInput (task) {
+    document.querySelector(`.add-notes[data-id="${task.id}"]`).style.display = "none";
+    const notesContainer = document.querySelector(`.notes-container[data-id="${task.id}"]`);
+    notesContainer.replaceChildren(
+        buildNotesInput(task),
+        buildNotesSubmit(task)
+    );
+}
+
+export function toggleNotes (task) {
+    document.querySelector(`.notes-container[data-id="${task.id}"]`).classList.toggle("hidden");
+}
+function buildTitle(item, type) {
+    const header = document.createElement("h3");
+    header.textContent = item.name;
+    header.id = item.id;
+    header.dataset.type = type;
+    header.classList.add("item-entry", type === "project" ? "project-item" : "todo-item");
+    if (item.active === true) header.classList.add("active-project");
+    if (item.complete === true) header.classList.add("completed-task");
+    return header;
+}
+
+function buildPrioritySelect(item) {
+    const select = document.createElement("select");
+    select.classList.add("priority");
+    select.dataset.id = item.id;
+    select.value = String(item.priority);     // keep DOM value as string
+
+    [1,2,3,4].forEach(v => {
+        const opt = document.createElement("option");
+        opt.classList.add("priority-option");
+        opt.dataset.id = item.id;
+        opt.value = String(v);
+        opt.textContent = String(v);
+        if (String(v) === String(item.priority)) opt.selected = true;
+        select.appendChild(opt);
+    });
+    return select;
+}
+
+function buildNotesPreview(item) {
+    const notesContainer = document.createElement("div");
+    notesContainer.classList.add("notes-container");
+    notesContainer.dataset.id = item.id;
+    if (item.notes) {
+        const taskNotes = document.createElement("p");
+        taskNotes.classList.add("task-notes");
+        taskNotes.textContent = item.notes;
+        notesContainer.appendChild(taskNotes);
+    }
+    return notesContainer;
+}
+
+function buildNotesInput(item) {
+    const notesInput = document.createElement("textarea");
+    notesInput.classList.add("notes-input");
+    notesInput.dataset.id = item.id;
+    notesInput.value = item.notes;
+    return notesInput;
+}
+
+function buildNotesSubmit(item) {
+    const submitNotesButton = document.createElement("button");
+    submitNotesButton.classList.add("submit-notes-button");
+    submitNotesButton.dataset.id = item.id;
+    submitNotesButton.textContent = item.notes === "" ? "Submit Notes" : "Update Notes";
+    return submitNotesButton;
+}
+
+function buildAddNotesButton (item) {
+    const addNotesButton = document.createElement("button");
+    addNotesButton.classList.add("add-notes");
+    addNotesButton.dataset.id = item.id;
+    addNotesButton.textContent = item.notes == "" ? "Add Notes" : "Edit Notes"
+    return addNotesButton;
+}
+
+function buildCompleteToggle(item) {
+    const btn = document.createElement("button");
+    btn.dataset.id = item.id;
+    btn.classList.add(item.complete ? "uncheck-button" : "check-off-button");
+    btn.textContent = item.complete ? "Uncheck" : "Check Off";
+    return btn;
+}
+
+function buildDeleteButton(item, type) {
+    const deleteButton = document.createElement("button");
+    deleteButton.classList.add("delete-button");
+    deleteButton.dataset.id = item.id;
+    deleteButton.dataset.type = type;
+    deleteButton.textContent = "X";
+    return deleteButton;
+}
+
+
+// TODO: Render Empty List Logic
