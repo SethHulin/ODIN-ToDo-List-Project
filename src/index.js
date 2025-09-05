@@ -71,6 +71,7 @@ undoButton.addEventListener("click" , event => {
     masterList = undo();
     saveState(masterList);
     clearElement(projectListElement);
+    clearElement(todoListElement);
     renderApp(masterList, projectListElement, todoListElement);
 
 })
