@@ -91,9 +91,7 @@ body {
     font-size: 1.5rem;
 }
 
-.notesInput {
 
-}
 
 .task-notes {
     font-size: .5rem;
@@ -106,4 +104,12 @@ body {
 
 .list-item:nth-child(odd) {
     background-color: #f9f9f9;
+}
+
+#todo-list-input-container , #project-input-container {
+    display: flex;
+}
+
+#heading {
+    display: flex;
 }

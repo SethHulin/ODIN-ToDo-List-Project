@@ -8,25 +8,26 @@
     <title>To-Do List</title>
 </head>
 <body>
-<div id="title">TODO LIST</div>
+<div id="heading">
+    <h1 id="title">TODO LIST</h1>
+    <button id="undo-button">Undo</button>
+</div>
 <div id="projects-container">
     <div id="project-title-container"><h2 id="project-title">Projects</h2></div>
     <div id="project-list-container" class="list-container">
-        <ul id="project-list" class="list" data-type="project"></ul>
+        <ul id="project-list" class="list" data-type="projects"></ul>
     </div>
 
-    <div id="project-input-container">
-        <form action="">
-            <button id="project-adder-button" data-type="project" class="adder-button">+</button>
+        <form action="" id="project-input-container">
+            <button id="project-adder-button" data-type="projects" class="adder-button">+</button>
             <input
                     type="text"
                     id="project-input"
                     placeholder="Add a new project"
                     aria-label="Add a new project"
-                    data-type = "project"
+                    data-type = "projects"
             />
         </form>
-    </div>
 </div>
 
 <div id="todo-container">
@@ -35,22 +36,21 @@
         <h2 id="todo-list-header">Add a project to begin</h2>
     </div>
     <div id="todo-list-container" class="list-container">
-        <ul class="list" id="todo-list" data-type="todo">
+        <ul class="list" id="todo-list" data-type="tasks">
         </ul>
     </div>
-        <div id="todo-list-input-container">
-            <form action="">
-                <button id="todo-list-adder-button" data-type="todo" class="adder-button">+</button>
+            <form action="" id="todo-list-input-container">
+                <button id="todo-list-adder-button" data-type="tasks" class="adder-button">+</button>
                 <input
                         type="text"
                         id="todo-list-input"
                         placeholder="Add a new task"
                         aria-label="Add a new task"
-                        data-type="todo"
+                        data-type="tasks"
                 />
+                <button id="clear-completed-tasks">Clear Completed Tasks</button>
             </form>
-        </div>
-    
+
 </div>
 </body>
 </html>

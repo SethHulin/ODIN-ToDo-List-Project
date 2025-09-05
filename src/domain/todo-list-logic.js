@@ -1,10 +1,10 @@
 export function addItem(list , name, type) {
     if (!name) return list;
 
-    if (type === "project") {
+    if (type === "projects") {
        var activeFlag = list.length === 0 ? true : false;
     }
-    const item = type === "project" ? makeProjectItem(name , activeFlag) : makeTodoItem(name);
+    const item = type === "projects" ? makeProjectItem(name , activeFlag) : makeTodoItem(name);
     const nameStrings = list.map(item => item.name);
     const normalizedItemName = normalize(item.name);
     const normalizedList = nameStrings.map(normalize);
@@ -45,8 +45,8 @@ export function setActiveProject (newActiveId , projectList, todoList) {
     })
     const newActiveProject = projectList.find (project => project.active === true)
     return {
-        project: projectList,
-        todo: newActiveProject.tasks
+        projects: projectList,
+        tasks: newActiveProject.tasks
     }
 
 }

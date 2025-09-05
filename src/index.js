@@ -1,50 +1,79 @@
 import "./styles/main.css";
 import {
-    renderList , displayError , clearProjectEntry, clearElement, renderTodoListHeader, addNotesInput, toggleNotes
-}from "./ui/UI.js";
+    renderList,
+    displayError,
+    clearProjectEntry,
+    clearElement,
+    renderTodoListHeader,
+    toggleNotesInput,
+    toggleNotes,
+    renderApp, renderProjects, renderTasks
+} from "./ui/UI.js";
 import {
     addItem , removeItem, setActiveProject, submitNotes, changePriority, checkOffTask, getCurrentItem
 } from "./domain/todo-list-logic";
+import {loadState, saveState} from "./services/storage";
+import {canUndo, pushState, undo} from "./domain/undo-stack";
 
 const adderButtons = document.querySelectorAll(".adder-button");
-const projectListElement = document.querySelector("#project-list")
-const todoListElement = document.querySelector("#todo-list")
-const todoListHeader = document.querySelector("#todo-list-header")
-const listElements = document.querySelectorAll(".list")
+const projectListElement = document.querySelector("#project-list");
+const todoListElement = document.querySelector("#todo-list");
+const todoListHeader = document.querySelector("#todo-list-header");
+const listElements = document.querySelectorAll(".list");
+const clearCompletedButton = document.getElementById("clear-completed-tasks");
+const todoListInput = document.getElementById("todo-list-input");
+const projectInput = document.getElementById("project-input");
+const undoButton = document.getElementById("undo-button");
 
-
-
-let currentListsByType = {
-    project: [],
-    todo: [],
-}
+let masterList = loadState();
+renderApp(masterList , projectListElement , todoListElement);
 
 adderButtons.forEach (button => button.addEventListener ("click" , event => {
     event.preventDefault();
     const type = event.target.dataset.type;
     const input = document.querySelector(`input[data-type="${type}"]`);
-    const currentListElement = document.querySelector(`ul[data-type="${type}"]`)
+    const currentListElement = document.querySelector(`ul[data-type="${type}"]`);
     const newItem = input.value;
     if (newItem) {
-        let currentList = currentListsByType[type];
+        let currentList = masterList[type];
         const newList = addItem(currentList , newItem, type);
         if (newList === currentList) {
             displayError("Project names should be unique");
             clearProjectEntry(input);
         } else {
-            currentListsByType[type] = newList;
+            masterList[type] = newList;
             clearElement(currentListElement);
-            renderList(currentListElement , currentListsByType[type], type);
+            renderList(currentListElement , masterList[type]);
             clearProjectEntry(input);
+            saveState(masterList)
         }
     } else {displayError("Project names cannot be blank");}
-    if (type === "project") {
+    if (type === "projects") {
         renderTodoListHeader(newItem);
-        handleNewActiveProject(currentListsByType["project"].find(item => item.name === newItem))
+        handleNewActiveProject(masterList.projects.find(item => item.name === newItem))
     }
 
 
+
 }))
+
+clearCompletedButton.addEventListener("click" , event =>{
+    event.preventDefault();
+    masterList["tasks"] = clearCompletedTasks(masterList["tasks"]);
+    clearElement(todoListElement);
+    renderList(todoListElement , masterList["tasks"]);
+    saveState(masterList);
+})
+
+undoButton.addEventListener("click" , event => {
+    if (!canUndo()) return;
+
+    masterList = undo();
+    saveState(masterList);
+    clearElement(projectListElement);
+    renderApp(masterList, projectListElement, todoListElement);
+
+})
 
 listElements.forEach(container => container.addEventListener("click" , event =>{
     const deleteButton = event.target.closest(".delete-button");
@@ -54,37 +83,41 @@ listElements.forEach(container => container.addEventListener("click" , event =>{
     const addNotesButton = event.target.closest(".add-notes");
     const priorityOption = event.target.closest(".priority-option");
     const checkOffButton = event.target.closest(".check-off-button");
-    const uncheckButton = event.target.closest (".uncheck-button");
+    const cancelNotesButton = event.target.closest(".cancel-notes-button");
     const currentListElement = document.querySelector(`ul[data-type="${type}"]`);
 
     if (deleteButton) {
+        pushState(masterList);
         const id = deleteButton.dataset.id;
-        const removedProject = currentListsByType["project"].find(item => item.id == id)
-        if (type === "project") {
-            if (removedProject.active === true && currentListsByType["project"].length > 1){
-                if (removedProject === currentListsByType["project"][0]) {
-                    handleNewActiveProject(currentListsByType["project"][1]);
+        const removedProject = masterList.projects.find(item => item.id == id);
+        if (type === "projects") {
+            if (removedProject.active === true && masterList.projects.length > 1){
+                if (removedProject === masterList.projects[0]) {
+                    handleNewActiveProject(masterList.projects[1]);
                 } else {
-                    handleNewActiveProject(currentListsByType["project"][0]);
+                    handleNewActiveProject(masterList.projects[0]);
                 }
             }
+            removedProject.tasks = [];
         }
-        currentListsByType[type] = removeItem(currentListsByType[type], id);
+        masterList[type] = removeItem(masterList[type], id);
         clearElement(currentListElement);
-        renderList(currentListElement, currentListsByType[type] , type);
+        renderList(currentListElement, masterList[type]);
+        saveState(masterList);
+
     }
 
     if (itemEntry) {
         switch (type) {
-            case "project": handleNewActiveProject(event.target);
+            case "projects": handleNewActiveProject(event.target);
             break;
-            case "todo": toggleNotes (event.target);
+            case "tasks": toggleNotes (event.target.id);
         }
     }
 
     if (addNotesButton) {
-        const currentTask = getCurrentItem (currentListsByType["todo"] , event.target.dataset.id)
-        addNotesInput(currentTask);
+        const currentTask = getCurrentItem (masterList.tasks , event.target.dataset.id);
+        toggleNotesInput(currentTask);
 
     }
 
@@ -92,27 +125,33 @@ listElements.forEach(container => container.addEventListener("click" , event =>{
         const taskId = event.target.dataset.id;
         const notesInput = document.querySelector(`textarea[data-id="${taskId}"]`);
         const notesText = notesInput.value;
-        currentListsByType["todo"] = submitNotes (taskId, currentListsByType["todo"] , notesText);
+        masterList.tasks = submitNotes (taskId, masterList.tasks , notesText);
         clearElement(todoListElement);
-        renderList(todoListElement , currentListsByType["todo"] , "todo");
+        renderTasks(masterList.tasks);
+        todoListInput.focus();
+        saveState(masterList);
+
     }
 
     if (priorityOption) {
-        currentListsByType["todo"] = changePriority(event.target.dataset.id , event.target.value , currentListsByType["todo"]);
+        masterList.tasks = changePriority(event.target.dataset.id , event.target.value , masterList.tasks);
+        saveState(masterList);
 
     }
 
     if (checkOffButton) {
-        currentListsByType["todo"] = checkOffTask(event.target.dataset.id , true , currentListsByType["todo"]);
-        clearElement(todoListElement);
-        renderList(todoListElement , currentListsByType["todo"] , "todo");
+        masterList["tasks"] = checkOffTask(event.target.dataset.id , true , masterList.tasks);
+        toggleNotes(event.target.dataset.id);
+        document.getElementById(event.target.dataset.id).classList.toggle("completed-task");
+        const checkButton = document.querySelector(`button.check-off-button[data-id="${event.target.dataset.id}"]`);
+        checkButton.textContent = getButtonContent(checkButton);
+        saveState(masterList);
     }
 
-    if (uncheckButton) {
-        currentListsByType["todo"] = checkOffTask (event.target.dataset.id , false , currentListsByType["todo"]);
-        clearElement(todoListElement);
-        renderList(todoListElement , currentListsByType["todo"] , "todo");
 
+    if (cancelNotesButton) {
+        const currentTask = getCurrentItem (masterList.tasks , event.target.dataset.id);
+        toggleNotesInput(currentTask);
     }
 
 
@@ -121,13 +160,24 @@ listElements.forEach(container => container.addEventListener("click" , event =>{
 
 function handleNewActiveProject (project) {
     const newActiveId = project.id;
-    const newActiveProject = currentListsByType["project"].find(item => item.id === newActiveId);
-    currentListsByType = setActiveProject(newActiveId , currentListsByType["project"] , currentListsByType["todo"]);
+    const newActiveProject = masterList.projects.find(item => item.id === newActiveId);
+    masterList = setActiveProject(newActiveId , masterList.projects , masterList.tasks);
     clearElement(projectListElement);
     clearElement(todoListElement);
     clearElement(todoListHeader);
     renderTodoListHeader(newActiveProject.name);
-    renderList(projectListElement , currentListsByType["project"], "project");
-    renderList(todoListElement , currentListsByType["todo"], "todo");
+    renderProjects(masterList.projects);
+    renderTasks(masterList.tasks);
+    document.getElementById("todo-list-input").focus();
+    saveState(masterList);
 }
 
+function getButtonContent (checkButton) {
+    checkButton.classList.toggle("uncheck");
+    if (checkButton.classList.contains("uncheck")) {return "Uncheck"}
+    else return "Check Off";
+}
+
+function clearCompletedTasks (list) {
+    return list.filter(item => item.complete === false);
+}
