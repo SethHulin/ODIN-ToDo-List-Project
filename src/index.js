@@ -7,31 +7,33 @@ import {
     renderTodoListHeader,
     toggleNotesInput,
     toggleNotes,
-    renderApp, renderProjects, renderTasks
+    renderApp, renderProjects, renderTasks, clearApp, toggleEdit, domMap, getActiveEventTarget
 } from "./ui/UI.js";
 import {
-    addItem , removeItem, setActiveProject, submitNotes, changePriority, checkOffTask, getCurrentItem
+    addItem,
+    removeItem,
+    setActiveProject,
+    submitNotes,
+    changePriority,
+    checkOffTask,
+    getCurrentItem,
+    normalizeList,
+    editItem, chooseNextActiveId
 } from "./domain/todo-list-logic";
 import {loadState, saveState} from "./services/storage";
 import {canUndo, pushState, undo} from "./domain/undo-stack";
 
-const adderButtons = document.querySelectorAll(".adder-button");
-const projectListElement = document.querySelector("#project-list");
-const todoListElement = document.querySelector("#todo-list");
-const todoListHeader = document.querySelector("#todo-list-header");
-const listElements = document.querySelectorAll(".list");
-const clearCompletedButton = document.getElementById("clear-completed-tasks");
-const todoListInput = document.getElementById("todo-list-input");
-const projectInput = document.getElementById("project-input");
-const undoButton = document.getElementById("undo-button");
+
+
 
 let masterList = loadState();
-renderApp(masterList , projectListElement , todoListElement);
+masterList = normalizeList(masterList);
+renderApp(masterList , domMap.listContainers.projects , domMap.listContainers.tasks);
 
-adderButtons.forEach (button => button.addEventListener ("click" , event => {
+domMap.buttons.adders.forEach (button => button.addEventListener ("click" , event => {
     event.preventDefault();
     const type = event.target.dataset.type;
-    const input = document.querySelector(`input[data-type="${type}"]`);
+    const input = document.querySelector(`.main-input[data-type="${type}"]`);
     const currentListElement = document.querySelector(`ul[data-type="${type}"]`);
     const newItem = input.value;
     if (newItem) {
@@ -50,126 +52,167 @@ adderButtons.forEach (button => button.addEventListener ("click" , event => {
     } else {displayError("Project names cannot be blank");}
     if (type === "projects") {
         renderTodoListHeader(newItem);
-        handleNewActiveProject(masterList.projects.find(item => item.name === newItem))
+        const newActiveProject = masterList.projects.find(item => item.name === newItem);
+        handleNewActiveProject(newActiveProject.id);
     }
 
 
 
 }))
 
-clearCompletedButton.addEventListener("click" , event =>{
+domMap.buttons.clearCompleted.addEventListener("click" , event =>{
     event.preventDefault();
     masterList["tasks"] = clearCompletedTasks(masterList["tasks"]);
-    clearElement(todoListElement);
-    renderList(todoListElement , masterList["tasks"]);
+    clearElement(domMap.listContainers.tasks);
+    renderList(domMap.listContainers.tasks , masterList["tasks"]);
     saveState(masterList);
 })
 
-undoButton.addEventListener("click" , event => {
+domMap.buttons.undo.addEventListener("click" , ()=> {
     if (!canUndo()) return;
 
     masterList = undo();
+    renderApp(masterList, domMap.listContainers.projects, domMap.listContainers.tasks);
     saveState(masterList);
-    clearElement(projectListElement);
-    clearElement(todoListElement);
-    renderApp(masterList, projectListElement, todoListElement);
 
 })
 
-listElements.forEach(container => container.addEventListener("click" , event =>{
-    const deleteButton = event.target.closest(".delete-button");
-    const type = event.target.dataset.type;
-    const itemEntry = event.target.closest(".item-entry");
-    const submitNotesButton = event.target.closest(".submit-notes-button");
-    const addNotesButton = event.target.closest(".add-notes");
-    const priorityOption = event.target.closest(".priority-option");
-    const checkOffButton = event.target.closest(".check-off-button");
-    const cancelNotesButton = event.target.closest(".cancel-notes-button");
-    const currentListElement = document.querySelector(`ul[data-type="${type}"]`);
 
-    if (deleteButton) {
-        pushState(masterList);
-        const id = deleteButton.dataset.id;
-        const removedProject = masterList.projects.find(item => item.id == id);
-        if (type === "projects") {
-            if (removedProject.active === true && masterList.projects.length > 1){
-                if (removedProject === masterList.projects[0]) {
-                    handleNewActiveProject(masterList.projects[1]);
-                } else {
-                    handleNewActiveProject(masterList.projects[0]);
+
+    domMap.listContainers.allLists.forEach(container =>
+        container.addEventListener("click", event => {
+            const type = event.target.dataset.type;
+            const action = getActiveEventTarget(event);
+
+            switch (action) {
+                case "delete": {
+                    pushState(masterList);
+                    const id = event.target.dataset.id;
+                    const removed = masterList.projects.find(p => p.id === id);
+
+                    if (type === "projects") {
+                        const remaining = masterList.projects.filter(p => p.id !== id);
+
+                        if (removed?.active) {
+                            const nextId = chooseNextActiveId(masterList.projects, id);
+                            if (nextId) handleNewActiveProject(nextId);
+                        }
+                        if (removed) removed.tasks = [];
+                    }
+
+                    masterList[type] = removeItem(masterList[type], id);
+                    masterList = normalizeList(masterList);
+
+                    clearApp(domMap.listContainers.projects, domMap.listContainers.tasks);
+                    renderApp(masterList, domMap.listContainers.projects, domMap.listContainers.tasks);
+                    saveState(masterList);
+                    break;
                 }
+
+                case "item":
+                    switch (type) {
+
+                        case "projects":
+                            handleNewActiveProject(event.target.dataset.id);
+                            break;
+
+                        case "tasks":
+                            toggleNotes(event.target.dataset.id);
+                            break;
+                    }
+
+                case "add notes": {
+                    const currentItem = getCurrentItem(masterList.tasks, event.target.dataset.id);
+                    toggleNotesInput(currentItem);
+                    break;
+                }
+
+                case "submit notes": {
+                    const taskId = event.target.dataset.id;
+                    const notesInput = document.querySelector(`textarea[data-id="${taskId}"]`);
+                    const notesText = notesInput.value;
+                    masterList.tasks = submitNotes(taskId, masterList.tasks, notesText);
+                    clearElement(domMap.listContainers.tasks);
+                    renderTasks(masterList.tasks);
+                    domMap.inputs.tasks.focus();
+                    saveState(masterList);
+                    break;
+                }
+
+                case "change priority":
+                    masterList.tasks = changePriority(
+                        event.target.dataset.id,
+                        event.target.value,
+                        masterList.tasks
+                    );
+                    saveState(masterList);
+                    break;
+
+                case "check off": {
+                    masterList.tasks = checkOffTask(event.target.dataset.id, true, masterList.tasks);
+                    toggleNotes(event.target.dataset.id);
+                    document
+                        .querySelector(`[data-id="${event.target.dataset.id}"]`)
+                        .classList.toggle("completed-task");
+                    const checkButton = document.querySelector(
+                        `button.check-off-button[data-id="${event.target.dataset.id}"]`
+                    );
+                    checkButton.textContent = getButtonContent(checkButton);
+                    saveState(masterList);
+                    break;
+                }
+
+                case "cancel notes": {
+                    const currentTask = getCurrentItem(masterList.tasks, event.target.dataset.id);
+                    toggleNotesInput(currentTask);
+                    break;
+                }
+
+                case "rename": {
+                    const currentItem = getCurrentItem(masterList[type], event.target.dataset.id);
+                    toggleEdit(currentItem);
+                    const editField = document.querySelector(
+                        `.edit-item[data-id="${event.target.dataset.id}"]`
+                    );
+                    editField.focus();
+                    editField.select();
+                    break;
+                }
+
+                case "save rename": {
+                    pushState(masterList);
+                    const currentItem = getCurrentItem(masterList[type], event.target.dataset.id);
+                    const editField = document.querySelector(
+                        `.edit-item[data-id="${event.target.dataset.id}"]`
+                    );
+                    const newName = editField.value;
+                    masterList[type] = editItem(masterList[type], currentItem, newName);
+                    clearApp(domMap.listContainers.projects, domMap.listContainers.tasks);
+                    renderApp(masterList, domMap.listContainers.projects, domMap.listContainers.tasks);
+                    break;
+                }
+
+                case "cancel rename":
+                    const currentItem = getCurrentItem(masterList[type], event.target.dataset.id);
+                    toggleEdit(currentItem);
+
+                default:
+                    return; // guard: ignore clicks we don’t care about
             }
-            removedProject.tasks = [];
-        }
-        masterList[type] = removeItem(masterList[type], id);
-        clearElement(currentListElement);
-        renderList(currentListElement, masterList[type]);
-        saveState(masterList);
-
-    }
-
-    if (itemEntry) {
-        switch (type) {
-            case "projects": handleNewActiveProject(event.target);
-            break;
-            case "tasks": toggleNotes (event.target.id);
-        }
-    }
-
-    if (addNotesButton) {
-        const currentTask = getCurrentItem (masterList.tasks , event.target.dataset.id);
-        toggleNotesInput(currentTask);
-
-    }
-
-    if (submitNotesButton) {
-        const taskId = event.target.dataset.id;
-        const notesInput = document.querySelector(`textarea[data-id="${taskId}"]`);
-        const notesText = notesInput.value;
-        masterList.tasks = submitNotes (taskId, masterList.tasks , notesText);
-        clearElement(todoListElement);
-        renderTasks(masterList.tasks);
-        todoListInput.focus();
-        saveState(masterList);
-
-    }
-
-    if (priorityOption) {
-        masterList.tasks = changePriority(event.target.dataset.id , event.target.value , masterList.tasks);
-        saveState(masterList);
-
-    }
-
-    if (checkOffButton) {
-        masterList["tasks"] = checkOffTask(event.target.dataset.id , true , masterList.tasks);
-        toggleNotes(event.target.dataset.id);
-        document.getElementById(event.target.dataset.id).classList.toggle("completed-task");
-        const checkButton = document.querySelector(`button.check-off-button[data-id="${event.target.dataset.id}"]`);
-        checkButton.textContent = getButtonContent(checkButton);
-        saveState(masterList);
-    }
+        })
+    );
 
 
-    if (cancelNotesButton) {
-        const currentTask = getCurrentItem (masterList.tasks , event.target.dataset.id);
-        toggleNotesInput(currentTask);
-    }
-
-
-}))
-// renderProjects(projectListElement , projectList);
-
-function handleNewActiveProject (project) {
-    const newActiveId = project.id;
+function handleNewActiveProject (newActiveId) {
     const newActiveProject = masterList.projects.find(item => item.id === newActiveId);
     masterList = setActiveProject(newActiveId , masterList.projects , masterList.tasks);
-    clearElement(projectListElement);
-    clearElement(todoListElement);
-    clearElement(todoListHeader);
+    clearElement(domMap.listContainers.projects);
+    clearElement(domMap.listContainers.tasks);
     renderTodoListHeader(newActiveProject.name);
     renderProjects(masterList.projects);
     renderTasks(masterList.tasks);
     document.getElementById("todo-list-input").focus();
+    pushState(masterList);
     saveState(masterList);
 }
 

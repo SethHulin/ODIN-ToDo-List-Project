@@ -10,7 +10,7 @@ body {
     grid:
             "... header header header" auto
             "... projects todo-list ..." auto/
-            1fr minmax(100px,300px) minmax(100px,300px) 1fr;
+            1fr minmax(100px,500px) minmax(100px,500px) 1fr;
 
 }
 
@@ -18,10 +18,10 @@ body {
     display: grid;
     align-items: baseline;
     grid:
-            "priority task-name add-notes-button check-off-button delete-button"
-            "... task-notes ... ... ..."
-            "... notes-input ... ... ..."
-            "submit-button ... ... ... ..."
+            "priority task-name rename-button add-notes-button check-off-button delete-button"
+            "... task-notes ... ... ... ..."
+            "... notes-input ... ... ... ..."
+            "submit-button ... ... ... ... ..."
 
 }
 
@@ -36,6 +36,10 @@ body {
 
 .priority {
     grid-area: priority;
+}
+
+.rename-button {
+    grid-area: rename-button;
 }
 
 .check-off-button {

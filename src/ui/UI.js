@@ -1,11 +1,26 @@
 // --- PUBLIC API ---
-const listContainers = {
-    projects: document.querySelector("#project-list"),
-    tasks: document.querySelector("#todo-list")
-}
+export const domMap = {
+    listContainers: {
+        allLists: document.querySelectorAll(".list"),
+        projects: document.querySelector("#project-list"),
+        tasks: document.querySelector("#todo-list")
+    },
+    inputs: {
+        projects: document.querySelector('.main-input[data-type="projects"]'),
+        tasks: document.querySelector('.main-input[data-type="tasks"]')
+    },
+    buttons: {
+        adders: document.querySelectorAll(".adder-button"),
+        undo: document.querySelector("#undo-button"),
+        clearCompleted: document.querySelector("#clear-completed-tasks")
+    },
+    header: document.querySelector("#todo-list-header"),
 
-export const renderProjects = (list) => renderList(listContainers.projects , list);
-export const renderTasks = (list) => renderList(listContainers.tasks , list);
+};
+
+export const renderProjects = (list) => renderList(domMap.listContainers.projects , list);
+export const renderTasks = (list) => renderList(domMap.listContainers.tasks , list);
+export const clearApp = (projectElement , taskElement) => {clearElement(projectElement); clearElement(taskElement);}
 
 export function renderList(container, list) {
     const type = container.dataset.type;
@@ -14,19 +29,21 @@ export function renderList(container, list) {
         const row = document.createElement("li");
         row.classList.add("list-item");
 
-        const listItem = buildTitle(item, type);
-        row.appendChild(listItem);
+        const itemEntry = buildTitle(item, type);
+        row.appendChild(itemEntry);
+        row.appendChild(buildEditTitle(item , type));
+        row.appendChild(buildRenameButton(item , type));
+
 
         if (type === "tasks") {
             row.appendChild(buildPrioritySelect(item));
-            listItem.appendChild(buildNotesPreview(item));
-            listItem.appendChild(buildNotesInput(item));
+            itemEntry.appendChild(buildNotesPreview(item));
+            itemEntry.appendChild(buildNotesInput(item));
             const notesInputButtons = Array.from(buildNotesInputButtons(item));
-            notesInputButtons.forEach(button => listItem.appendChild(button));
+            notesInputButtons.forEach(button => itemEntry.appendChild(button));
             row.appendChild(buildAddNotesButton(item));
             row.appendChild(buildCompleteToggle(item));
         }
-
         row.appendChild(buildDeleteButton(item, type));
 
         frag.appendChild(row);
@@ -34,10 +51,11 @@ export function renderList(container, list) {
     container.appendChild(frag);
 }
 
-export function renderApp (masterList , projectContainer , todoContainer) {
+export function renderApp (masterList , projectElement , taskElement) {
     switch (masterList.projects.length) {
         case 0: return; break;
         default:
+            clearApp(projectElement , taskElement);
             renderProjects(masterList.projects);
             renderTasks(masterList.tasks);
             renderTodoListHeader(masterList.projects.find(project => project.active == true).name);
@@ -46,8 +64,7 @@ export function renderApp (masterList , projectContainer , todoContainer) {
 }
 
 export function renderTodoListHeader (projectName) {
-    const todoListHeader = document.querySelector("#todo-list-header")
-    todoListHeader.innerText = projectName;
+    domMap.header.innerText = projectName;
 
 }
 
@@ -68,13 +85,16 @@ export function clearElement (element) {
 
 export function getActiveEventTarget (event) {
     if (event.target.closest(".delete-button")) return "delete";
-    if (event.target.closest(".submit-notes-button")) return "submitNotes";
-    if (event.target.closest(".priority-option")) return "changePriority";
-    if (event.target.closest(".item-entry")) {
-        const type = event.target.dataset.type;
-        return type === "projects" ? "activateProject" : "expandTodo";
-    }
-    return;
+    if (event.target.closest(".rename-button")) return "rename";
+    if (event.target.closest(".save-edit")) return "save rename";
+    if (event.target.closest(".cancel-edit")) return "cancel rename";
+    if (event.target.closest(".item-entry")) return "item";
+    if (event.target.closest(".submit-notes-button")) return "submit notes";
+    if (event.target.closest(".add-notes")) return "add notes";
+    if (event.target.closest(".priority-option")) return "change priority";
+    if (event.target.closest(".check-off-button")) return "check off";
+    if (event.target.closest(".cancel-notes-button")) return "cancel notes";
+    return null;
 }
 
 
@@ -84,24 +104,61 @@ export function toggleNotesInput (task) {
     const notesElements = document.querySelectorAll(`.notes-element[data-id="${task.id}"]`)
     notesElements.forEach(el => el.classList.toggle("hidden"));
     document.querySelector(`.notes-input[data-id="${task.id}"]`).focus();
+    document.querySelector(`.notes-input[data-id="${task.id}"]`).select();
 
 }
 
 export function toggleNotes (taskId) {
-
     document.querySelector(`.notes-container[data-id="${taskId}"]`).classList.toggle("hidden");
+}
+
+export function toggleEdit (task) {
+    document.querySelector(`.edit-container[data-id="${task.id}"]`).classList.toggle("hidden");
+    document.querySelector(`.item-entry[data-id="${task.id}"]`).classList.toggle("hidden");
+
 }
 
 
 function buildTitle(item, type) {
     const header = document.createElement("h3");
     header.textContent = item.name;
-    header.id = item.id;
+    header.dataset.id = item.id;
     header.dataset.type = type;
     header.classList.add("item-entry", type === "projects" ? "project-item" : "todo-item");
     if (item.active === true) header.classList.add("active-project");
     if (item.complete === true) header.classList.add("completed-task");
     return header;
+}
+
+function buildEditTitle(item, type) {
+    const editContainer = document.createElement("div");
+
+    const input = document.createElement("input");
+    input.value = item.name;
+    input.dataset.id = item.id;
+    input.dataset.type = type;
+    input.classList.add("edit-item");
+
+    const saveButton = document.createElement("button");
+    saveButton.classList.add("save-edit");
+    saveButton.textContent = "Save";
+    saveButton.dataset.id = item.id;
+    saveButton.dataset.type = type;
+
+    const cancelButton = document.createElement("button");
+    cancelButton.classList.add("cancel-edit");
+    cancelButton.textContent = "Cancel";
+    cancelButton.dataset.id = item.id;
+    cancelButton.dataset.type = type;
+
+    editContainer.classList.add("hidden" , "edit-container");
+    editContainer.dataset.id = item.id;
+    editContainer.dataset.type = type;
+    editContainer.appendChild(input);
+    editContainer.appendChild(saveButton);
+    editContainer.appendChild(cancelButton);
+
+    return editContainer;
 }
 
 function buildPrioritySelect(item) {
@@ -184,6 +241,15 @@ function buildDeleteButton(item, type) {
     deleteButton.dataset.type = type;
     deleteButton.textContent = "X";
     return deleteButton;
+}
+
+function buildRenameButton(item, type) {
+    const renameButton = document.createElement("button");
+    renameButton.classList.add("rename-button");
+    renameButton.dataset.id = item.id;
+    renameButton.dataset.type = type;
+    renameButton.textContent = "Rename";
+    return renameButton;
 }
 
 

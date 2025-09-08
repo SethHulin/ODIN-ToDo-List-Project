@@ -15,6 +15,19 @@ export function addItem(list , name, type) {
     return [...list,item];
 }
 
+export function normalizeList (masterList) {
+    if (masterList.projects.length === 0) return {projects: [makeProjectItem("Inbox" , true)] , tasks: []};
+    return {...masterList};
+}
+
+export function chooseNextActiveId(projects, removedId) {
+    const idx = projects.findIndex(p => p.id === removedId);
+    if (idx === -1) return null;
+    // Prefer next neighbor, else previous
+    const next = projects[idx + 1] || projects[idx - 1];
+    return next ? next.id : null;
+}
+
 function makeProjectItem (name , flag) {
     return {
         name: name,
@@ -34,21 +47,20 @@ function makeTodoItem (name) {
     }
 }
 
-export function setActiveProject (newActiveId , projectList, todoList) {
-    const oldActiveProject = projectList.find(project => project.active === true)
-    const oldId = oldActiveProject.id;
-    projectList.forEach(project => {
-        if (project.id === oldId) {
-            project.tasks = todoList
-        }
-        project.active = project.id === newActiveId;
-    })
-    const newActiveProject = projectList.find (project => project.active === true)
-    return {
-        projects: projectList,
-        tasks: newActiveProject.tasks
-    }
+export function setActiveProject(newActiveId, projectList, todoList) {
+    const oldActive = projectList.find(p => p.active);
+    if (oldActive) oldActive.tasks = todoList;
 
+    projectList.forEach(p => { p.active = (p.id === newActiveId); });
+
+    const newActive = projectList.find(p => p.active) || projectList[0];
+    return { projects: projectList, tasks: newActive ? newActive.tasks : [] };
+}
+
+export function editItem (list , item , newName) {
+    const currentItem = list.find(el => el.id === item.id);
+    currentItem.name = newName;
+    return list;
 }
 
 
