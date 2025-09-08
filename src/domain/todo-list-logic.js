@@ -1,93 +1,96 @@
-export function addItem(list , name, type) {
-    if (!name) return list;
+// domain/todo-list-logic.js
 
-    if (type === "projects") {
-       var activeFlag = list.length === 0 ? true : false;
-    }
-    const item = type === "projects" ? makeProjectItem(name , activeFlag) : makeTodoItem(name);
-    const nameStrings = list.map(item => item.name);
-    const normalizedItemName = normalize(item.name);
-    const normalizedList = nameStrings.map(normalize);
-
-    if (normalizedList.includes(normalizedItemName)) return list;
-
-    item.name = item.name.trim();
-    return [...list,item];
+// ————— Item Factories —————
+function makeProjectItem(name, isActive) {
+    return {
+        name: name.trim(),
+        id: Date.now().toString(),
+        tasks: [],
+        active: !!isActive,
+    };
 }
 
-export function normalizeList (masterList) {
-    if (masterList.projects.length === 0) return {projects: [makeProjectItem("Inbox" , true)] , tasks: []};
-    return {...masterList};
+function makeTodoItem(name) {
+    return {
+        name: name.trim(),
+        id: Date.now().toString(),
+        priority: 1,
+        notes: "",
+        complete: false,
+    };
+}
+
+// ————— Normalization / Defaults —————
+export function normalizeList(master) {
+    if (!master || !Array.isArray(master.projects)) return { projects: [makeProjectItem("Inbox", true)], tasks: [] };
+    if (master.projects.length === 0) return { projects: [makeProjectItem("Inbox", true)], tasks: [] };
+    // ensure exactly one active (first wins if none)
+    const anyActive = master.projects.some(p => p.active);
+    if (!anyActive) master.projects[0].active = true;
+    return { ...master };
+}
+
+// ————— Project Active / Switching —————
+export function setActiveProject(newActiveId, projectList, currentTaskList) {
+    const oldActive = projectList.find(p => p.active);
+    if (oldActive) oldActive.tasks = currentTaskList;
+
+    projectList.forEach(p => { p.active = (p.id === newActiveId); });
+
+    const next = projectList.find(p => p.active) || projectList[0];
+    return { projects: projectList, tasks: next ? next.tasks : [] };
 }
 
 export function chooseNextActiveId(projects, removedId) {
     const idx = projects.findIndex(p => p.id === removedId);
     if (idx === -1) return null;
-    // Prefer next neighbor, else previous
-    const next = projects[idx + 1] || projects[idx - 1];
-    return next ? next.id : null;
+    const neighbor = projects[idx + 1] || projects[idx - 1] || null;
+    return neighbor ? neighbor.id : null;
 }
 
-function makeProjectItem (name , flag) {
-    return {
-        name: name,
-        id: Date.now().toString(),
-        tasks: [],
-        active: flag
-    };
+// ————— CRUD helpers —————
+export function addItem(list, name, type) {
+    if (!name || !list) return list || [];
+
+    const normalizedName = normalize(name);
+    const names = list.map(i => normalize(i.name));
+    if (names.includes(normalizedName)) return list; // reject duplicates (case/trim-insensitive)
+
+    const isProject = type === "projects";
+    const isFirstProject = isProject && list.length === 0;
+    const newItem = isProject ? makeProjectItem(name, isFirstProject) : makeTodoItem(name);
+    return [...list, newItem];
 }
 
-function makeTodoItem (name) {
-    return {
-        name: name,
-        id: Date.now().toString(),
-        priority: 1,
-        notes: "",
-        complete: false,
-    }
+export function editItem(list, item, newName) {
+    if (!list || !item) return list || [];
+    const name = (newName ?? "").trim();
+    if (!name) return list; // ignore empty rename
+    return list.map(el => (el.id === item.id ? { ...el, name } : el));
 }
 
-export function setActiveProject(newActiveId, projectList, todoList) {
-    const oldActive = projectList.find(p => p.active);
-    if (oldActive) oldActive.tasks = todoList;
-
-    projectList.forEach(p => { p.active = (p.id === newActiveId); });
-
-    const newActive = projectList.find(p => p.active) || projectList[0];
-    return { projects: projectList, tasks: newActive ? newActive.tasks : [] };
+export function removeItem(list, id) {
+    if (!list) return [];
+    return list.filter(i => i.id !== id);
 }
 
-export function editItem (list , item , newName) {
-    const currentItem = list.find(el => el.id === item.id);
-    currentItem.name = newName;
-    return list;
+export function submitNotes(taskId, taskList, notesText) {
+    return taskList.map(t => (t.id === taskId ? { ...t, notes: notesText } : t));
 }
 
-
-
-export function removeItem(list , buttonId) {
-    if (!list) return;
-    return list.filter(item => item.id !== buttonId);
+export function changePriority(taskId, newPriority, list) {
+    return list.map(t => (t.id === taskId ? { ...t, priority: Number(newPriority) } : t));
 }
 
-export function submitNotes (taskId , taskList , notesText) {
-    return taskList.map (task => (task.id === taskId) ? {...task,notes: notesText} : task);
-
+export function checkOffTask(taskId, completeFlag, list) {
+    return list.map(t => (t.id === taskId ? { ...t, complete: !!completeFlag } : t));
 }
 
-export function changePriority (taskId , newPriority , list) {
-    return list.map (task => task.id === taskId ? {...task,priority: newPriority} : task);
+export function getCurrentItem(list, id) {
+    return (list || []).find(i => i.id === id);
 }
 
-export function checkOffTask (taskId , completeFlag , list) {
-    return list.map (task => task.id == taskId ? {...task , complete: completeFlag} : task);
+// ————— Utils —————
+function normalize(s) {
+    return (s || "").trim().toLowerCase();
 }
-
-export function getCurrentItem(list , id) {
-    return list.find(item => item.id === id);
-}
-
-function normalize (string) {
-    return string.trim().toLowerCase();
-}
-
