@@ -1,5 +1,4 @@
 // src/index.js
-
 import "./styles/main.css";
 
 import {
@@ -17,6 +16,7 @@ import {
     toggleNotesInput,
     toggleEdit,
     getActiveEventTarget,
+    updateCheckButton,
 } from "./ui/UI.js";
 
 import {
@@ -29,7 +29,7 @@ import {
     getCurrentItem,
     normalizeList,
     editItem,
-    chooseNextActiveId, // make sure this is exported from your domain file
+    chooseNextActiveId,
 } from "./domain/todo-list-logic";
 
 import { loadState, saveState } from "./services/storage";
@@ -48,7 +48,7 @@ domMap.buttons.adders.forEach((button) =>
     button.addEventListener("click", (event) => {
         event.preventDefault();
 
-        const type = event.target.dataset.type; // "projects" | "tasks"
+        const type = event.target.dataset.type;
         const input = document.querySelector(`.main-input[data-type="${type}"]`);
         const listEl = document.querySelector(`ul[data-type="${type}"]`);
         const newName = input.value;
@@ -63,7 +63,6 @@ domMap.buttons.adders.forEach((button) =>
         const updated = addItem(current, newName, type);
 
         if (updated === current) {
-            // name collision / no change
             displayError("Names must be unique.");
             clearProjectEntry(input);
             return;
@@ -74,7 +73,6 @@ domMap.buttons.adders.forEach((button) =>
         renderList(listEl, masterList[type]);
         clearProjectEntry(input);
 
-        // If a project was added, make it active and focus tasks input
         if (type === "projects") {
             const newProj = masterList.projects.find((p) => p.name === newName);
             if (newProj) handleNewActiveProject(newProj.id);
@@ -108,25 +106,23 @@ domMap.buttons.undo.addEventListener("click", () => {
 // -----------------------------
 domMap.listContainers.allLists.forEach((container) =>
     container.addEventListener("click", (event) => {
-        const type = event.target.dataset.type; // projects | tasks (present on many controls)
+        const type = event.target.dataset.type;
         const action = getActiveEventTarget(event);
         if (!action) return;
 
         switch (action) {
             case "delete": {
-                const id = event.target.dataset.id;
+                const id = event.target.dataset.id || event.target.closest("[data-id]")?.dataset.id;
                 if (!id) return;
 
                 pushState(masterList);
 
-                // If deleting a project, decide next active BEFORE mutating array
                 const removed = type === "projects" ? masterList.projects.find((p) => p.id === id) : null;
                 if (removed && removed.active && masterList.projects.length > 1) {
                     const nextId = chooseNextActiveId(masterList.projects, id);
                     if (nextId) handleNewActiveProject(nextId);
                 }
 
-                // Optional: clear removed tasks (if you store them)
                 if (removed) removed.tasks = [];
 
                 masterList[type] = removeItem(masterList[type], id);
@@ -139,7 +135,6 @@ domMap.listContainers.allLists.forEach((container) =>
             }
 
             case "item": {
-                // Clicked the item title
                 const id = event.target.dataset.id;
                 if (!id) return;
 
@@ -186,38 +181,54 @@ domMap.listContainers.allLists.forEach((container) =>
                 break;
             }
 
+            case "toggle priority": {
+                const btn = event.target.closest(".priority-button");
+                if (!btn) return;
+                const wrapper = btn.closest(".priority-wrapper");
+                const open = wrapper.classList.toggle("open");
+                btn.setAttribute("aria-expanded", String(open));
+                break;
+            }
+
             case "change priority": {
-                const id = event.target.dataset.id;
-                if (!id) return;
-                const newPriority = event.target.value;
+                const opt = event.target.closest(".priority-option");
+                if (!opt) return;
+                const id = opt.dataset.id;
+                const newPriority = opt.dataset.value;
+                if (!id || !newPriority) return;
+
                 pushState(masterList);
                 masterList.tasks = changePriority(id, newPriority, masterList.tasks);
+
+                // Update just the button icon & close menu
+                const wrapper = document.querySelector(`.priority-wrapper[data-id="${id}"]`);
+                const btn = wrapper?.querySelector(".priority-button");
+                if (btn) btn.innerHTML = opt.innerHTML.replace(/<span class="priority-label">.*<\/span>/, "");
+                wrapper?.classList.remove("open");
+                btn?.setAttribute("aria-expanded", "false");
+
                 saveState(masterList);
                 break;
             }
 
             case "check off": {
-                const id = event.target.dataset.id;
+                const btn = event.target.closest(".check-off-button");
+                const id  = btn?.dataset.id;
                 if (!id) return;
 
-                pushState(masterList);
-                masterList.tasks = checkOffTask(id, true, masterList.tasks);
+                const current = getCurrentItem(masterList.tasks, id);
+                const nextComplete = !current.complete;
+                masterList.tasks = checkOffTask(id, nextComplete, masterList.tasks);
 
-                // Hide notes preview and Add Notes when checked
-                toggleNotes(id); // ensures preview is hidden if it was visible
+                updateCheckButton(btn, nextComplete);
+
+                const notesContainer = document.querySelector(`.notes-container[data-id="${id}"]`);
+                const addNotesBtn    = document.querySelector(`.add-notes[data-id="${id}"]`);
+                if (notesContainer) notesContainer.classList.toggle("hidden", nextComplete);
+                if (addNotesBtn)    addNotesBtn.classList.toggle("hidden", nextComplete);
 
                 const title = document.querySelector(`.item-entry[data-id="${id}"]`);
-                if (title) title.classList.toggle("completed-task");
-
-                const btn = document.querySelector(`button.check-off-button[data-id="${id}"]`);
-                if (btn) {
-                    btn.classList.toggle("uncheck");
-                    btn.textContent = btn.classList.contains("uncheck") ? "Uncheck" : "Check Off";
-                }
-
-                // Hide Add Notes button on completed
-                const addBtn = document.querySelector(`.add-notes[data-id="${id}"]`);
-                if (addBtn) addBtn.classList.add("hidden");
+                if (title) title.classList.toggle("completed-task", nextComplete);
 
                 saveState(masterList);
                 break;
@@ -242,7 +253,6 @@ domMap.listContainers.allLists.forEach((container) =>
 
                 const field = document.querySelector(`.edit-item[data-id="${id}"]`);
                 const newName = field ? field.value : "";
-
                 if (!newName) {
                     displayError("Name cannot be blank");
                     return;
@@ -267,7 +277,7 @@ domMap.listContainers.allLists.forEach((container) =>
             }
 
             default:
-                return; // ignore anything else
+                return;
         }
     })
 );

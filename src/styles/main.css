@@ -1,119 +1,206 @@
+/* src/styles/main.css */
+@import "~@fortawesome/fontawesome-free/css/all.css";
+
 :root {
+    --gap: 0.5rem;
+    --gap-LG: 1.0;
+    --gap-XL: 1.5rem;
+    --muted: #777;
+    --border: #ddd;
+    --flag-low: #9CA3AF;
+    --flag-med: #3B82F6;
+    --flag-medhigh: #F59E0B;
+    --flag-high: #EF4444;
     font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
 
+
+
+* { box-sizing: border-box; }
+
+button {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    line-height: 1;
+}
+
+.hidden { display: none; }
+
+/* Layout */
 body {
     margin: 0;
     padding: 2rem;
     display: grid;
-    justify-content: space-between;
     grid:
-            "... header header header" auto
-            "... projects todo-list ..." auto/
-            1fr minmax(100px,500px) minmax(100px,500px) 1fr;
-
+    "header header" auto
+    "projects todo-list" auto /
+    minmax(100px,300px) minmax(100px,500px);
+    gap: 2rem;
 }
 
-.list-item {
+#heading {
+    grid-area: header;
     display: grid;
-    align-items: baseline;
-    grid:
-            "priority task-name rename-button add-notes-button check-off-button delete-button"
-            "... task-notes ... ... ... ..."
-            "... notes-input ... ... ... ..."
-            "submit-button ... ... ... ... ..."
-
-}
-
-.adder-button, .item-entry, .priority, .delete-button, .submit-notes-button  {
-    cursor: pointer;
-}
-
-.completed-task {
-    opacity: .3;
-    text-decoration: line-through;
-}
-
-.priority {
-    grid-area: priority;
-}
-
-.rename-button {
-    grid-area: rename-button;
-}
-
-.check-off-button {
-    grid-area: check-off-button;
-}
-
-.todo-item {
-    grid-area: task-name;
-}
-
-.add-notes {
-    grid-area: add-notes-button;
-}
-
-.hidden {
-    display: none;
-}
-
-
-
-.delete-button {
-    grid-area: delete-button;
-}
-
-.task-notes {
-    grid-area: task-notes;
-}
-
-.notes-input {
-    grid-area: notes-input;
-}
-
-.submit-button {
-    grid-area: submit-button;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: 1rem;
+    margin: 0 0 2rem 0;
+    width: 100%;
 }
 
 #title {
-    grid-area: header;
-    font-size: 5rem;
-    font-weight: 700;
+    grid-column: 1;
+    justify-self: start;
+    margin: 0;
+    line-height: 1;
+}
+
+#undo-button {
+    grid-column: 2;
+    justify-self: end;
 }
 
 #projects-container {
     grid-area: projects;
+    min-height: 100vh;
+    background: teal;
+    padding: var(--gap);
+    color: white;
 }
 
-#todo-container {
-    grid-area: todo-list;
+#projects-container i {
+    color: white;
 }
 
-.active-project {
-    font-weight: 900;
-    font-size: 1.5rem;
+#todo-container     { grid-area: todo-list; }
+
+/* Inputs */
+#project-input {
+    border: none;
+    border-bottom: 1px solid white;
+    background: none;
+    color: white;
+    margin-top: var(--gap-XL);
 }
 
-
-
-.task-notes {
-    font-size: .5rem;
-    color: #555555;
+#project-input i {
+    color: white;
 }
 
-.list-item:nth-child(even) {
-    background-color: white;
+#todo-list-input {
+    border: none;
+    border-bottom: 1px solid black;
+    background: none;
+    margin-top: var(--gap-XL);
 }
 
-.list-item:nth-child(odd) {
-    background-color: #f9f9f9;
+/* Lists */
+.list-container ul { list-style: none; margin: 0; padding: 0; }
+
+.list-item {
+    display: grid;
+    align-items: center;
+    grid:
+    "priority task-name left right" auto
+    "... task-notes ... ..." auto
+    "... notes-input ... ..." auto
+    "submit-notes-button cancel-notes-button ... ..." auto /
+    auto 1fr auto auto;
+    gap: var(--gap);
+    padding-top: 1.25rem;
+    border-bottom: 1px solid var(--border);
 }
 
-#todo-list-input-container , #project-input-container {
+.item-entry.todo-item   { grid-area: task-name; margin: 0; }
+.item-entry.project-item{ margin: 0; }
+
+.row-left  { grid-area: left;  display: inline-flex; gap: .25rem; }
+.row-right { grid-area: right; display: inline-flex; gap: .25rem; }
+
+.delete-button, .rename-button, .add-notes, .check-off-button { color: #222; }
+.delete-button:hover  { color: #ef4444; }
+.rename-button:hover  { color: #2563eb; }
+.add-notes:hover      { color: #2563eb; }
+.check-off-button:hover { color: #16a34a; }
+
+/* Notes */
+.notes-container { grid-column: task-name; grid-area: task-notes; }
+.task-notes { margin: 0; color: var(--muted); font-size: 0.875rem; }
+.notes-input { grid-area: notes-input; width: 100%; min-height: 4rem; }
+.submit-notes-button { grid-area: submit-notes-button; }
+.cancel-notes-button { grid-area: cancel-notes-button; }
+
+/* Completed */
+.completed-task { opacity: .4; text-decoration: line-through; }
+
+/* Active project */
+.active-project { font-weight: 800; }
+
+/* ---------- Priority Flags (custom dropdown) ---------- */
+
+.priority-wrapper {
+    grid-area: priority;
+    position: relative;
+    display: inline-block;
+}
+
+.priority-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 1.8rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fff;
+}
+
+.priority-button i { font-size: 0.95rem; }
+
+/* menu */
+.priority-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    margin: 0;
+    padding: 0.25rem 0;
+    list-style: none;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    min-width: 8rem;
+    box-shadow: 0 6px 24px rgba(0,0,0,.08);
+    display: none;
+    z-index: 10;
+}
+
+.priority-wrapper.open .priority-menu { display: block; }
+
+.priority-option {
     display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: 0.35rem 0.5rem;
+    cursor: pointer;
+    white-space: nowrap;
 }
 
-#heading {
-    display: flex;
+.priority-option:hover { background: #f7f7f7; }
+
+.priority-label { font-size: 0.9rem; color: #333; }
+
+/* Flag colors (Font Awesome .fa-flag) */
+.flag-low      { color: var(--flag-low); }
+.flag-med      { color: var(--flag-med); }
+.flag-medhigh  { color: var(--flag-medhigh); }
+.flag-high     { color: var(--flag-high); }
+
+/* Make priority control compact on narrow screens */
+@media (max-width: 520px) {
+    .priority-menu { min-width: 7rem; }
 }
+
+
+

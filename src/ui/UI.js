@@ -33,13 +33,13 @@ export const clearApp = (projectEl, taskEl) => {
 };
 
 export function renderApp(masterList, projectEl, taskEl) {
-    if (!masterList?.projects?.length) return; // normalized state guarantees Inbox, so this is just a guard
+    if (!masterList?.projects?.length) return;
 
     clearApp(projectEl, taskEl);
     renderProjects(masterList.projects);
     renderTasks(masterList.tasks);
 
-    const active = masterList.projects.find(p => p.active);
+    const active = masterList.projects.find((p) => p.active);
     if (active) renderTodoListHeader(active.name);
 }
 
@@ -55,13 +55,19 @@ export function renderList(container, list) {
         const title = buildTitle(item, type);
         row.appendChild(title);
         row.appendChild(buildEditTitle(item, type));
-        row.appendChild(buildRenameButton(item, type));
+
+        // left cluster (rename, delete) — placed near title
+        const left = document.createElement("div");
+        left.classList.add("row-left");
+        left.appendChild(buildRenameButton(item, type));
+        left.appendChild(buildDeleteButton(item, type));
+        row.appendChild(left);
 
         if (type === "tasks") {
-            // core task controls
-            row.appendChild(buildPrioritySelect(item));
+            // priority flag dropdown (replaces <select>)
+            row.appendChild(buildPriorityFlags(item));
 
-            // notes preview container (always render container so toggle works, hide if empty)
+            // notes preview container
             const preview = buildNotesPreview(item);
             title.appendChild(preview);
 
@@ -69,22 +75,22 @@ export function renderList(container, list) {
             title.appendChild(buildNotesInput(item));
             for (const btn of buildNotesInputButtons(item)) title.appendChild(btn);
 
-            // per-task actions
-            row.appendChild(buildAddNotesButton(item));
-            row.appendChild(buildCompleteToggle(item));
+            // right cluster (add-notes, complete)
+            const right = document.createElement("div");
+            right.classList.add("row-right");
+            right.appendChild(buildAddNotesButton(item));
+            right.appendChild(buildCompleteToggle(item));
+            row.appendChild(right);
 
-            // Hide the Add Notes button if task is complete
+            // Hide elements if complete
             if (item.complete) {
-                const addBtn = row.querySelector(`.add-notes[data-id="${item.id}"]`);
+                const addBtn = right.querySelector(`.add-notes[data-id="${item.id}"]`);
                 if (addBtn) addBtn.classList.add("hidden");
-                // Also hide notes preview if complete
                 const container = row.querySelector(`.notes-container[data-id="${item.id}"]`);
                 if (container) container.classList.add("hidden");
             }
         }
 
-        // delete at the end for both types
-        row.appendChild(buildDeleteButton(item, type));
         frag.appendChild(row);
     }
 
@@ -114,16 +120,17 @@ export function clearElement(el) {
 // ACTION ROUTER (EVENT TARGET NORMALIZER)
 // -----------------------------
 export function getActiveEventTarget(event) {
-    if (event.target.closest(".delete-button"))       return "delete";
-    if (event.target.closest(".rename-button"))       return "rename";
-    if (event.target.closest(".save-edit"))           return "save rename";
-    if (event.target.closest(".cancel-edit"))         return "cancel rename";
-    if (event.target.closest(".submit-notes-button")) return "submit notes";
-    if (event.target.closest(".cancel-notes-button")) return "cancel notes";
-    if (event.target.closest(".add-notes"))           return "add notes";
-    if (event.target.closest(".priority-option"))     return "change priority";
-    if (event.target.closest(".check-off-button"))    return "check off";
-    if (event.target.closest(".item-entry"))          return "item";
+    if (event.target.closest(".delete-button"))         return "delete";
+    if (event.target.closest(".rename-button"))         return "rename";
+    if (event.target.closest(".save-edit"))             return "save rename";
+    if (event.target.closest(".cancel-edit"))           return "cancel rename";
+    if (event.target.closest(".submit-notes-button"))   return "submit notes";
+    if (event.target.closest(".cancel-notes-button"))   return "cancel notes";
+    if (event.target.closest(".add-notes"))             return "add notes";
+    if (event.target.closest(".check-off-button"))      return "check off";
+    if (event.target.closest(".priority-button"))       return "toggle priority";
+    if (event.target.closest(".priority-option"))       return "change priority";
+    if (event.target.closest(".item-entry"))            return "item";
     return null;
 }
 
@@ -131,21 +138,16 @@ export function getActiveEventTarget(event) {
 // TOGGLERS (NOTES / EDIT MODES)
 // -----------------------------
 export function toggleNotesInput(task) {
-    // Hide the Add/Edit Notes button while editing
     const addBtn = document.querySelector(`.add-notes[data-id="${task.id}"]`);
     if (addBtn) addBtn.classList.toggle("hidden");
 
-    // Toggle all notes elements (textarea + submit + cancel)
     const noteEls = document.querySelectorAll(`.notes-element[data-id="${task.id}"]`);
-    noteEls.forEach(el => el.classList.toggle("hidden"));
+    noteEls.forEach((el) => el.classList.toggle("hidden"));
 
-    // While editing, hide the notes preview and other row actions that can interfere
     const row = findRowForItem(task.id);
     if (row) {
         const preview = row.querySelector(`.notes-container[data-id="${task.id}"]`);
         if (preview) preview.classList.toggle("hidden");
-
-        // Optionally hide/disable other controls to prevent conflicts
         toggleRowInterferingActions(row, task.id);
     }
 
@@ -169,7 +171,6 @@ export function toggleEdit(item) {
     edit.classList.toggle("hidden");
     title.classList.toggle("hidden");
 
-    // While renaming, hide/disable row actions to avoid collisions
     const row = findRowForItem(item.id);
     if (row) toggleRowInterferingActions(row, item.id);
 
@@ -227,22 +228,47 @@ function buildEditTitle(item, type) {
     return editContainer;
 }
 
-function buildPrioritySelect(item) {
-    const select = document.createElement("select");
-    select.classList.add("priority");
-    select.dataset.id = item.id;
-    select.value = String(item.priority);
+// --- Priority Flags (custom dropdown) ---
+function buildPriorityFlags(item) {
+    const wrapper = document.createElement("div");
+    wrapper.classList.add("priority-wrapper");
+    wrapper.dataset.id = item.id;
 
-    [1, 2, 3, 4].forEach(v => {
-        const opt = document.createElement("option");
-        opt.classList.add("priority-option");
-        opt.dataset.id = item.id;
-        opt.value = String(v);
-        opt.textContent = String(v);
-        if (String(v) === String(item.priority)) opt.selected = true;
-        select.appendChild(opt);
+    const button = document.createElement("button");
+    button.classList.add("priority-button");
+    button.dataset.id = item.id;
+    button.dataset.type = "tasks";
+    button.setAttribute("aria-haspopup", "listbox");
+    button.setAttribute("aria-expanded", "false");
+    button.innerHTML = flagIcon(item.priority);
+    wrapper.appendChild(button);
+
+    const menu = document.createElement("ul");
+    menu.classList.add("priority-menu");
+    menu.setAttribute("role", "listbox");
+    [1, 2, 3, 4].forEach((v) => {
+        const li = document.createElement("li");
+        li.classList.add("priority-option");
+        li.dataset.id = item.id;
+        li.dataset.value = String(v);
+        li.setAttribute("role", "option");
+        li.innerHTML = flagIcon(v) + `<span class="priority-label">Priority ${v}</span>`;
+        menu.appendChild(li);
     });
-    return select;
+    wrapper.appendChild(menu);
+
+    return wrapper;
+}
+
+function flagIcon(level) {
+    // Use different colors/heights per level with Font Awesome flag
+    // Level 1 (low) -> light/short; Level 4 (high) -> bold/tall look via classes
+    const colorClass =
+        level === 4 ? "flag-high" :
+            level === 3 ? "flag-medhigh" :
+                level === 2 ? "flag-med" :
+                    "flag-low";
+    return `<i class="fas fa-flag ${colorClass}"></i>`;
 }
 
 function buildNotesPreview(task) {
@@ -250,7 +276,6 @@ function buildNotesPreview(task) {
     notesContainer.classList.add("notes-container");
     notesContainer.dataset.id = task.id;
 
-    // Always render container; hide if empty so toggling is stable
     if (!task.notes) {
         notesContainer.classList.add("hidden");
         return notesContainer;
@@ -290,7 +315,12 @@ function buildAddNotesButton(item) {
     const btn = document.createElement("button");
     btn.classList.add("add-notes");
     btn.dataset.id = item.id;
-    btn.textContent = item.notes ? "Edit Notes" : "Add Notes";
+
+    const icon = document.createElement("i");
+    icon.classList.add("fas", "fa-pen-to-square");
+    icon.dataset.id = item.id;
+
+    btn.appendChild(icon);
     return btn;
 }
 
@@ -299,7 +329,12 @@ function buildCompleteToggle(item) {
     btn.dataset.id = item.id;
     btn.classList.add("check-off-button");
     if (item.complete) btn.classList.add("uncheck");
-    btn.textContent = item.complete ? "Uncheck" : "Check Off";
+
+    const icon = document.createElement("i");
+    (item.complete ? icon.classList.add("fas", "fa-x") : icon.classList.add("fas", "fa-check"));
+    icon.dataset.id = item.id;
+
+    btn.appendChild(icon);
     return btn;
 }
 
@@ -308,7 +343,13 @@ function buildDeleteButton(item, type) {
     btn.classList.add("delete-button");
     btn.dataset.id = item.id;
     btn.dataset.type = type;
-    btn.textContent = "X";
+
+    const icon = document.createElement("i");
+    icon.classList.add("fas", "fa-trash");
+    icon.dataset.id = item.id;
+    icon.dataset.type = type;
+
+    btn.appendChild(icon);
     return btn;
 }
 
@@ -317,43 +358,50 @@ function buildRenameButton(item, type) {
     btn.classList.add("rename-button");
     btn.dataset.id = item.id;
     btn.dataset.type = type;
-    btn.textContent = "Rename";
+
+    const icon = document.createElement("i");
+    icon.classList.add("fas", "fa-pencil");
+    icon.dataset.id = item.id;
+    icon.dataset.type = type;
+
+    btn.appendChild(icon);
     return btn;
+}
+
+export function updateCheckButton(btn, complete) {
+    const icon = btn.querySelector("i");
+    if (!icon) return;
+    btn.classList.toggle("uncheck", complete);
+    icon.className = "fas";
+    icon.classList.add(complete ? "fa-x" : "fa-check");
 }
 
 // -----------------------------
 // ROW-SCOPED UTILS
 // -----------------------------
 function findRowForItem(id) {
-    // Any element with this data-id lives inside the li row; climb to li
     const any = document.querySelector(`[data-id="${id}"]`);
     return any ? any.closest("li") : null;
 }
 
 function toggleRowInterferingActions(row, id) {
-    // Hide/disable actions while an edit/notes session is active; reveal otherwise.
-    // We'll base it on whether either edit-container or notes-input is visible.
     const editVisible  = row.querySelector(`.edit-container[data-id="${id}"]:not(.hidden)`);
     const notesVisible = row.querySelector(`.notes-input[data-id="${id}"]:not(.hidden)`);
-
     const shouldHide = Boolean(editVisible || notesVisible);
 
     [
         `.rename-button[data-id="${id}"]`,
         `.delete-button[data-id="${id}"]`,
         `.check-off-button[data-id="${id}"]`,
-    ].forEach(sel => {
+    ].forEach((sel) => {
         const el = row.querySelector(sel);
         if (!el) return;
         if (shouldHide) el.classList.add("hidden");
         else el.classList.remove("hidden");
     });
 
-    // The Add Notes button is handled inside toggleNotesInput, but we can also
-    // ensure consistency here:
     const addNotes = row.querySelector(`.add-notes[data-id="${id}"]`);
     if (addNotes && !row.querySelector(`.check-off-button[data-id="${id}"]`)?.classList.contains("uncheck")) {
-        // only show add-notes if not complete & not in edit
         if (shouldHide) addNotes.classList.add("hidden");
         else if (!row.querySelector(`[data-id="${id}"]`)?.classList.contains("completed-task")) {
             addNotes.classList.remove("hidden");

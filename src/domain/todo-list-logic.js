@@ -1,4 +1,3 @@
-// domain/todo-list-logic.js
 
 // ————— Item Factories —————
 function makeProjectItem(name, isActive) {

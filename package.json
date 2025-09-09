@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "webpack serve --mode development",
     "build": "webpack --mode production",
+    "deploy": "npm run build && rsync -a --delete dist/ docs/ && git add docs && git commit -m \"Deploy\" && git push",
     "preview": "npx serve dist"
   },
   "private": true,
@@ -20,5 +21,8 @@
     "webpack": "^5.101.3",
     "webpack-cli": "^6.0.1",
     "webpack-dev-server": "^5.2.2"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.0.1"
   }
 }
