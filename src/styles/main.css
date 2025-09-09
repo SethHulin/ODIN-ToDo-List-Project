@@ -7,7 +7,7 @@
     --gap-XL: 1.5rem;
     --muted: #777;
     --border: #ddd;
-    --flag-low: #9CA3AF;
+    --flag-low: #000000;
     --flag-med: #3B82F6;
     --flag-medhigh: #F59E0B;
     --flag-high: #EF4444;
@@ -24,6 +24,12 @@ button {
     cursor: pointer;
     padding: 0.25rem;
     line-height: 1;
+}
+
+.non-icon-button {
+    border: 1px solid black;
+    border-radius: 15%;
+    margin: var(--gap);
 }
 
 .hidden { display: none; }
@@ -107,10 +113,11 @@ body {
     "... task-notes ... ..." auto
     "... notes-input ... ..." auto
     "submit-notes-button cancel-notes-button ... ..." auto /
-    auto 1fr auto auto;
+    auto auto auto auto;
     gap: var(--gap);
     padding-top: 1.25rem;
     border-bottom: 1px solid var(--border);
+    cursor: pointer;
 }
 
 .item-entry.todo-item   { grid-area: task-name; margin: 0; }

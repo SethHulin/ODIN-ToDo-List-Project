@@ -146,6 +146,15 @@ domMap.listContainers.allLists.forEach((container) =>
                 break;
             }
 
+            case "expand":
+                const id = event.target.dataset.id;
+                if (!id) return;
+                const expansionArrow = document.querySelector(`i[data-id="${id}"]`);
+                expansionArrow.classList.toggle("fa-chevron-right");
+                expansionArrow.classList.toggle("fa-chevron-down");
+                toggleNotes(id);
+                break;
+
             case "add notes": {
                 const id = event.target.dataset.id;
                 if (!id) return;
@@ -161,6 +170,9 @@ domMap.listContainers.allLists.forEach((container) =>
 
                 const input = document.querySelector(`textarea[data-id="${id}"]`);
                 const text = input ? input.value : "";
+                const expansionArrow = document.querySelector(`i[data-id="${id}"]`);
+                expansionArrow.classList.toggle("fa-chevron-right");
+                expansionArrow.classList.toggle("fa-chevron-down");
 
                 pushState(masterList);
                 masterList.tasks = submitNotes(id, masterList.tasks, text);
@@ -208,6 +220,8 @@ domMap.listContainers.allLists.forEach((container) =>
                 btn?.setAttribute("aria-expanded", "false");
 
                 saveState(masterList);
+                clearApp(masterList, domMap.listContainers.projects , domMap.listContainers.tasks);
+                renderApp(masterList, domMap.listContainers.projects , domMap.listContainers.tasks);
                 break;
             }
 

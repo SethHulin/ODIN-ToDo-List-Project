@@ -51,33 +51,31 @@ export function renderList(container, list) {
         const row = document.createElement("li");
         row.classList.add("list-item");
 
-        // title + edit block (hidden by default)
         const title = buildTitle(item, type);
         row.appendChild(title);
         row.appendChild(buildEditTitle(item, type));
 
-        // left cluster (rename, delete) — placed near title
         const left = document.createElement("div");
         left.classList.add("row-left");
-        left.appendChild(buildRenameButton(item, type));
-        left.appendChild(buildDeleteButton(item, type));
+        const expansionIcon = document.createElement("i");
+        expansionIcon.classList.add("fas" , "fa-chevron-right" , "expansion-arrow");
+        expansionIcon.dataset.id = item.id;
+        left.appendChild(expansionIcon);
         row.appendChild(left);
 
         if (type === "tasks") {
-            // priority flag dropdown (replaces <select>)
             row.appendChild(buildPriorityFlags(item));
 
-            // notes preview container
             const preview = buildNotesPreview(item);
             title.appendChild(preview);
 
-            // notes input + its buttons (hidden initially)
             title.appendChild(buildNotesInput(item));
             for (const btn of buildNotesInputButtons(item)) title.appendChild(btn);
 
-            // right cluster (add-notes, complete)
             const right = document.createElement("div");
             right.classList.add("row-right");
+            right.appendChild(buildRenameButton(item, type));
+            right.appendChild(buildDeleteButton(item, type));
             right.appendChild(buildAddNotesButton(item));
             right.appendChild(buildCompleteToggle(item));
             row.appendChild(right);
@@ -131,6 +129,7 @@ export function getActiveEventTarget(event) {
     if (event.target.closest(".priority-button"))       return "toggle priority";
     if (event.target.closest(".priority-option"))       return "change priority";
     if (event.target.closest(".item-entry"))            return "item";
+    if (event.target.closest(".expansion-arrow"))       return "expand";
     return null;
 }
 
@@ -194,6 +193,12 @@ function buildTitle(item, type) {
     header.classList.add("item-entry", type === "projects" ? "project-item" : "todo-item");
     if (item.active)   header.classList.add("active-project");
     if (item.complete) header.classList.add("completed-task");
+    switch (item.priority) {
+        case 1: header.style.color = "#000000"; break;
+        case 2: header.style.color = "#3B82F6"; break;
+        case 3: header.style.color = "#F59E0B"; break;
+        case 4: header.style.color = "#EF4444"; break;
+    }
     return header;
 }
 
@@ -210,13 +215,13 @@ function buildEditTitle(item, type) {
     input.classList.add("edit-item");
 
     const saveButton = document.createElement("button");
-    saveButton.classList.add("save-edit");
+    saveButton.classList.add("save-edit", "non-icon-button");
     saveButton.textContent = "Save";
     saveButton.dataset.id = item.id;
     saveButton.dataset.type = type;
 
     const cancelButton = document.createElement("button");
-    cancelButton.classList.add("cancel-edit");
+    cancelButton.classList.add("cancel-edit", "non-icon-button");
     cancelButton.textContent = "Cancel";
     cancelButton.dataset.id = item.id;
     cancelButton.dataset.type = type;
@@ -299,12 +304,12 @@ function buildNotesInput(item) {
 
 function buildNotesInputButtons(item) {
     const submit = document.createElement("button");
-    submit.classList.add("submit-notes-button", "notes-element", "hidden");
+    submit.classList.add("submit-notes-button", "notes-element", "hidden", "non-icon-button");
     submit.dataset.id = item.id;
     submit.textContent = item.notes ? "Update Notes" : "Submit Notes";
 
     const cancel = document.createElement("button");
-    cancel.classList.add("cancel-notes-button", "notes-element", "hidden");
+    cancel.classList.add("cancel-notes-button", "notes-element", "hidden", "non-icon-button");
     cancel.dataset.id = item.id;
     cancel.textContent = "Cancel";
 
