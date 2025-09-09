@@ -65,7 +65,7 @@ body {
 #projects-container {
     grid-area: projects;
     min-height: 100vh;
-    background: teal;
+    background: rgba(0, 128, 128, 0.62);
     padding: var(--gap);
     color: white;
 }
