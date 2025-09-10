@@ -57,11 +57,12 @@ export function renderList(container, list) {
 
         const left = document.createElement("div");
         left.classList.add("row-left");
-        const expansionIcon = document.createElement("i");
-        expansionIcon.classList.add("fas" , "fa-chevron-right" , "expansion-arrow");
-        expansionIcon.dataset.id = item.id;
-        left.appendChild(expansionIcon);
-        row.appendChild(left);
+        const right = document.createElement("div");
+        right.classList.add("row-right");
+        right.appendChild(buildRenameButton(item, type));
+        right.appendChild(buildDeleteButton(item, type));
+        row.appendChild(right);
+
 
         if (type === "tasks") {
             row.appendChild(buildPriorityFlags(item));
@@ -71,14 +72,14 @@ export function renderList(container, list) {
 
             title.appendChild(buildNotesInput(item));
             for (const btn of buildNotesInputButtons(item)) title.appendChild(btn);
-
-            const right = document.createElement("div");
-            right.classList.add("row-right");
-            right.appendChild(buildRenameButton(item, type));
-            right.appendChild(buildDeleteButton(item, type));
+            const expansionIcon = document.createElement("i");
+            expansionIcon.classList.add("fas" , "fa-chevron-right" , "expansion-arrow");
+            expansionIcon.dataset.id = item.id;
+            left.appendChild(expansionIcon);
+            row.appendChild(left);
             right.appendChild(buildAddNotesButton(item));
             right.appendChild(buildCompleteToggle(item));
-            row.appendChild(right);
+
 
             // Hide elements if complete
             if (item.complete) {
@@ -88,6 +89,7 @@ export function renderList(container, list) {
                 if (container) container.classList.add("hidden");
             }
         }
+
 
         frag.appendChild(row);
     }
