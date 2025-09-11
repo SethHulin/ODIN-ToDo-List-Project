@@ -49,9 +49,11 @@ domMap.buttons.adders.forEach((button) =>
         event.preventDefault();
 
         const type = event.target.dataset.type;
+        console.log(type)
         const input = document.querySelector(`.main-input[data-type="${type}"]`);
         const listEl = document.querySelector(`ul[data-type="${type}"]`);
         const newName = input.value;
+        console.log(newName)
 
         if (!newName) {
             displayError(`${type === "projects" ? "Project" : "Task"} name cannot be blank`);
