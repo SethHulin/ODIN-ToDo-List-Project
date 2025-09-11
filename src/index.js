@@ -84,6 +84,46 @@ domMap.buttons.adders.forEach((button) =>
     })
 );
 
+domMap.forms.forEach((form) => {
+    form.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const type = form.dataset.type; // "projects" or "tasks"
+        const data = new FormData(form);
+        const newName = data.get(type); // because we set name="projects" or "tasks"
+
+        const listEl = document.querySelector(`ul[data-type="${type}"]`);
+        const input = domMap.inputs[type];
+
+        if (!newName) {
+            displayError(`${type === "projects" ? "Project" : "Task"} name cannot be blank`);
+            return;
+        }
+
+        pushState(masterList);
+        const current = masterList[type];
+        const updated = addItem(current, newName, type);
+
+        if (updated === current) {
+            displayError("Names must be unique.");
+            clearProjectEntry(input);
+            return;
+        }
+
+        masterList[type] = updated;
+        clearElement(listEl);
+        renderList(listEl, masterList[type]);
+        clearProjectEntry(input);
+
+        if (type === "projects") {
+            const newProj = masterList.projects.find((p) => p.name === newName);
+            if (newProj) handleNewActiveProject(newProj.id);
+        }
+
+        saveState(masterList);
+    });
+});
+
 // -----------------------------
 // GLOBAL BUTTONS
 // -----------------------------

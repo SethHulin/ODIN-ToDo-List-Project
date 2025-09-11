@@ -19,6 +19,8 @@ export const domMap = {
         clearCompleted: document.querySelector("#clear-completed-tasks"),
     },
     header: document.querySelector("#todo-list-header"),
+    forms: document.querySelectorAll("form"),
+
 };
 
 // -----------------------------

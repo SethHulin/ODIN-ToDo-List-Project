@@ -18,11 +18,12 @@
         <ul id="project-list" class="list" data-type="projects"></ul>
     </div>
 
-        <form action="" id="project-input-container">
+        <form action="" id="project-input-container" class="input-form" data-type="projects">
             <button id="project-adder-button" data-type="projects"><i class="fa fa-square-plus adder-button" data-type="projects"></i></button>
             <input
                     type="text"
                     id="project-input"
+                    name="projects"
                     class="main-input"
                     placeholder="Add a new project"
                     aria-label="Add a new project"
@@ -40,10 +41,11 @@
         <ul class="list" id="todo-list" data-type="tasks">
         </ul>
     </div>
-            <form action="" id="todo-list-input-container">
+            <form action="" id="todo-list-input-container" class="input-form" data-type="tasks">
                 <button id="todo-list-adder-button" data-type="tasks"><i class="fa fa-square-plus adder-button" data-type="tasks"></i></button>
                 <input
                         type="text"
+                        name="tasks"
                         id="todo-list-input"
                         placeholder="Add a new task"
                         aria-label="Add a new task"
